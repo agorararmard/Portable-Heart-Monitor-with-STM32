@@ -1,0 +1,166 @@
+import ketai.sensors.*; 
+import android.location.Location;
+import android.content.Intent;
+import android.os.Bundle;
+
+
+import ketai.camera.*;
+
+import ketai.net.bluetooth.*; 
+import ketai.ui.*;
+import ketai.net.*;
+import java.lang.*;
+
+//import oscP5.*;
+//gps data variables
+
+
+String Printable = "";
+
+// to initiate the bluetooth
+KetaiBluetooth bt;
+String bt_info = "";
+boolean isConfiguring = true;
+KetaiList klist;
+
+//double angle_bearing_fin =0;
+
+//
+
+
+
+// general code components are used from ketai.org/example & mobileprocessing.org
+
+//********************************************************************
+// The following code is required to enable bluetooth at startup.
+//********************************************************************
+void onCreate(Bundle savedInstanceState) {
+  super.onCreate(savedInstanceState);
+  bt = new KetaiBluetooth(this);
+}
+
+void onActivityResult(int requestCode, int resultCode, Intent data) {
+  bt.onActivityResult(requestCode, resultCode, data);
+}
+
+//********************************************************************
+
+
+
+
+// 0 = latitude
+// 1 = longtiude
+
+
+void setup() {
+
+  //orientation(LANDSCAPE);
+  
+  orientation(PORTRAIT);
+  
+  //setting target location so code is located at mobileprocessing.org/geolocation.html
+ 
+  
+  //p4 coordinates
+ // destination.setLatitude(30.020222);
+  //destination.setLongitude(31.498040);
+  
+  // starting bluetooth device
+  
+  
+     textAlign(CENTER,CENTER);
+     textSize(70);
+
+     //starting bluetooth
+     bt.start();
+     //isConfiguring = true;
+  
+     bt.getPairedDeviceNames();
+     println(bt.getPairedDeviceNames());
+     bt.connectToDeviceByName("group2");
+  
+  
+
+}
+
+void draw() {
+  
+   
+  ArrayList <String> devices = bt.getConnectedDeviceNames();
+  if(devices.size() == 0)
+     bt.connectToDeviceByName("group2");
+    else isConfiguring = false;
+  
+  background(78, 93, 75);
+    text("The Heart Reading. \n" +
+      Printable + " Bps",  0, 0, width, height);
+   
+}
+
+
+
+
+//send data over bluetooth
+void sendData(String s, int size){
+  byte data[] = new byte[size + 1];
+  for(int i = 0; i < size; i++){
+    data[i] = (byte) s.charAt(i);
+  }
+  data[size] = '\r';
+  
+  bt.broadcast(data);
+}
+
+//Call back method to manage data received
+void onBluetoothDataEvent(String who, byte[] data) {
+ println("received something");
+  if (isConfiguring)
+    return;
+println("received something no config");
+  //KetaiOSCMessage is the same as OscMessage
+  //   but allows construction by byte array
+  /*KetaiOSCMessage m = new KetaiOSCMessage(data);
+  if (m.isValid())
+  {
+    if (m.checkAddrPattern("/remoteMouse/"))
+    {
+      if (m.checkTypetag("ii"))
+      {
+        remoteMouse.x = m.get(0).intValue();
+        remoteMouse.y = m.get(1).intValue();
+      }
+    }
+  }*/
+  String msg =  new String(data);
+    println("msg: "+ msg);
+  Printable = msg; 
+}
+
+void onKetaiListSelection(KetaiList klist) {
+ 
+ String selection = klist.getSelection();
+ 
+ bt.connectToDeviceByName(selection);
+ 
+ //dispose of list for now
+ 
+ klist = null;
+ 
+}
+
+String getBluetoothInformation()
+{
+  String btInfo = "Server Running: ";
+  btInfo += bt.isStarted() + "\n";
+  btInfo += "Discovering: " + bt.isDiscovering() + "\n";
+  btInfo += "Device Discoverable: "+bt.isDiscoverable() + "\n";
+  btInfo += "\nConnected Devices: \n";
+
+  ArrayList<String> devices = bt.getConnectedDeviceNames();
+  for (String device: devices)
+  {
+    btInfo+= device+"\n";
+  }
+
+  return btInfo;
+}
